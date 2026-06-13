@@ -24,8 +24,7 @@
 .DS_Store
 *.pem
 
-*.sql
-supabase_migration.sql
+
 
 # debug
 npm-debug.log*

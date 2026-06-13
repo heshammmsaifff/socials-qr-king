@@ -47,6 +47,7 @@ interface Profile {
   company_address_en: string | null;
   company_address_ar: string | null;
   logo_url: string | null;
+  background_image_url: string | null;
   instapay_link: string | null;
   wallet_number: string | null;
   slug: string;
@@ -226,7 +227,14 @@ function MobilePreview({
             </div>
 
             {/* Inner Screen Content - Simulated webpage */}
-            <div className={`flex-1 overflow-y-auto no-scrollbar ${theme.textColor} flex flex-col items-center justify-between p-4 pt-12 pb-5 bg-gradient-to-b ${theme.mainBg}`}>
+            <div 
+              className={`flex-1 overflow-y-auto no-scrollbar ${theme.textColor} flex flex-col items-center justify-between p-4 pt-12 pb-5 bg-gradient-to-b ${theme.mainBg} bg-cover bg-center`}
+              style={
+                profile.background_image_url
+                  ? { backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(${profile.background_image_url})` }
+                  : undefined
+              }
+            >
               
               {/* Language Switcher Simulation */}
               <div className="w-full flex justify-end mb-3 shrink-0">
@@ -440,6 +448,7 @@ export function AdminDashboardForm({
   const [newCompanyAddressEn, setNewCompanyAddressEn] = useState("");
   const [newCompanyAddressAr, setNewCompanyAddressAr] = useState("");
   const [newLogoUrl, setNewLogoUrl] = useState("");
+  const [newBackgroundImageUrl, setNewBackgroundImageUrl] = useState("");
   const [newInstapayLinks, setNewInstapayLinks] = useState<string[]>([""]);
   const [newWalletNumbers, setNewWalletNumbers] = useState<string[]>([""]);
   const [newLocation, setNewLocation] = useState("");
@@ -457,6 +466,7 @@ export function AdminDashboardForm({
         newCompanyAddressEn !== "" ||
         newCompanyAddressAr !== "" ||
         newLogoUrl !== "" ||
+        newBackgroundImageUrl !== "" ||
         (newInstapayLinks.length > 1 || newInstapayLinks[0] !== "") ||
         (newWalletNumbers.length > 1 || newWalletNumbers[0] !== "") ||
         newLocation !== "" ||
@@ -476,6 +486,7 @@ export function AdminDashboardForm({
         clean(editingProfile.company_address_en) !== clean(original.company_address_en) ||
         clean(editingProfile.company_address_ar) !== clean(original.company_address_ar) ||
         clean(editingProfile.logo_url) !== clean(original.logo_url) ||
+        clean(editingProfile.background_image_url) !== clean(original.background_image_url) ||
         clean(editingProfile.instapay_link) !== clean(original.instapay_link) ||
         clean(editingProfile.wallet_number) !== clean(original.wallet_number) ||
         clean(editingProfile.location) !== clean(original.location) ||
@@ -684,6 +695,7 @@ export function AdminDashboardForm({
           company_address_en: newCompanyAddressEn || null,
           company_address_ar: newCompanyAddressAr || null,
           logo_url: newLogoUrl || null,
+          background_image_url: newBackgroundImageUrl || null,
           instapay_link: newInstapayLinks.filter(Boolean).map((l) => l.trim()).join(",") || null,
           wallet_number: newWalletNumbers.filter(Boolean).map((w) => w.trim()).join(",") || null,
           location: newLocation || null,
@@ -715,6 +727,7 @@ export function AdminDashboardForm({
       setNewCompanyAddressEn("");
       setNewCompanyAddressAr("");
       setNewLogoUrl("");
+      setNewBackgroundImageUrl("");
       setNewInstapayLinks([""]);
       setNewWalletNumbers([""]);
       setNewLocation("");
@@ -753,6 +766,7 @@ export function AdminDashboardForm({
           company_address_en: editingProfile.company_address_en,
           company_address_ar: editingProfile.company_address_ar,
           logo_url: editingProfile.logo_url,
+          background_image_url: editingProfile.background_image_url,
           instapay_link: editingProfile.instapay_link,
           wallet_number: editingProfile.wallet_number,
           slug: formattedSlug,
@@ -992,7 +1006,8 @@ export function AdminDashboardForm({
   // ----------------------------------------------------
   if (view === "list") {
     return (
-      <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
+      <>
+        <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-card p-6 rounded-2xl border border-border/40 shadow-sm gap-4">
           <div className="flex flex-col gap-1">
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -1148,8 +1163,83 @@ export function AdminDashboardForm({
           )}
         </div>
       </div>
-    );
-  }
+
+      {/* Quick QR Code Modal */}
+      {activeQrModalProfile && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700/60 p-6 rounded-3xl w-full max-w-sm flex flex-col items-center gap-5 text-center shadow-2xl relative animate-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button
+              onClick={() => setActiveQrModalProfile(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors text-lg"
+              title={locale === "ar" ? "إغلاق" : "Close"}
+            >
+              ✕
+            </button>
+
+            <div className="flex flex-col items-center gap-1.5 mt-2">
+              <FaQrcode className="text-primary w-8 h-8" />
+              <h3 className="text-lg font-bold text-slate-100">
+                {locale === "ar" ? "رمز الاستجابة السريعة (QR Code)" : "QR Code"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {locale === "ar" ? `للصفحة: /${activeQrModalProfile.slug}` : `For page: /${activeQrModalProfile.slug}`}
+              </p>
+            </div>
+
+            {/* QR Code Container */}
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-md flex items-center justify-center shrink-0">
+              <QRCodeSVG
+                id={`qr-svg-${activeQrModalProfile.slug}`}
+                value={typeof window !== "undefined" ? `${window.location.origin}/${locale}/${activeQrModalProfile.slug}` : `/${locale}/${activeQrModalProfile.slug}`}
+                size={180}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+
+            {/* Clickable URL */}
+            <div className="w-full">
+              {(() => {
+                const fullUrl = typeof window !== "undefined" ? `${window.location.origin}/${locale}/${activeQrModalProfile.slug}` : `/${locale}/${activeQrModalProfile.slug}`;
+                return (
+                  <a
+                    href={fullUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-primary hover:underline flex items-center justify-center gap-1 break-all"
+                  >
+                    <span className="truncate max-w-[240px]">{fullUrl}</span>
+                    <FaExternalLinkAlt className="w-3 h-3 shrink-0" />
+                  </a>
+                );
+              })()}
+            </div>
+
+            {/* Download Actions */}
+            <div className="flex flex-col gap-2 w-full pt-1">
+              <Button
+                type="button"
+                onClick={() => downloadPNG(activeQrModalProfile.slug)}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700/60 rounded-xl py-2 text-xs flex items-center justify-center gap-1.5 shadow-md hover:scale-[1.02] transition-all"
+              >
+                {locale === "ar" ? "تحميل صورة PNG" : "Download PNG"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => downloadSVG(activeQrModalProfile.slug)}
+                className="w-full border-dashed border-primary/40 hover:border-primary/80 rounded-xl py-2 text-xs flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] transition-all"
+              >
+                {locale === "ar" ? "تحميل ملف SVG المتجه" : "Download Vector SVG"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
   // ----------------------------------------------------
   // EDITOR / CREATOR VIEW RENDERING
@@ -1166,6 +1256,7 @@ export function AdminDashboardForm({
         company_address_en: newCompanyAddressEn,
         company_address_ar: newCompanyAddressAr,
         logo_url: newLogoUrl,
+        background_image_url: newBackgroundImageUrl,
         instapay_link: newInstapayLinks.filter(Boolean).map((l) => l.trim()).join(","),
         wallet_number: newWalletNumbers.filter(Boolean).map((w) => w.trim()).join(","),
         location: newLocation,
@@ -1322,6 +1413,17 @@ export function AdminDashboardForm({
                       placeholder="https://example.com/logo.png"
                       value={newLogoUrl}
                       onChange={(e) => setNewLogoUrl(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="new_bg_image_url">{dict.admin.backgroundUrl}</Label>
+                    <Input
+                      id="new_bg_image_url"
+                      type="url"
+                      placeholder="https://example.com/background.jpg"
+                      value={newBackgroundImageUrl}
+                      onChange={(e) => setNewBackgroundImageUrl(e.target.value)}
                     />
                   </div>
 
@@ -1612,6 +1714,24 @@ export function AdminDashboardForm({
                             setEditingProfile({
                               ...editingProfile,
                               logo_url: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="edit_bg_image_url">
+                          {dict.admin.backgroundUrl}
+                        </Label>
+                        <Input
+                          id="edit_bg_image_url"
+                          type="url"
+                          placeholder="https://example.com/background.jpg"
+                          value={editingProfile.background_image_url || ""}
+                          onChange={(e) =>
+                            setEditingProfile({
+                              ...editingProfile,
+                              background_image_url: e.target.value || null,
                             })
                           }
                         />

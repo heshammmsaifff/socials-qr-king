@@ -60,7 +60,12 @@ export default async function PublicProfilePage({ params }: { params: Params }) 
 
   return (
     <main
-      className={`min-h-screen ${theme.textColor} flex flex-col items-center justify-between py-12 px-6 bg-gradient-to-b ${theme.mainBg}`}
+      className={`min-h-screen ${theme.textColor} flex flex-col items-center justify-between py-12 px-6 bg-gradient-to-b ${theme.mainBg} bg-cover bg-center`}
+      style={
+        profile.background_image_url
+          ? { backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(${profile.background_image_url})` }
+          : undefined
+      }
       dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Top Header Controls */}

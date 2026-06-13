@@ -46,8 +46,13 @@ export default async function AdminDashboard({ params }: { params: Params }) {
       <header className="w-full flex justify-center border-b border-border/40 backdrop-blur-md sticky top-0 z-50">
         <div className="w-full max-w-5xl flex justify-between items-center p-4 px-6 text-sm">
           <div className="flex gap-4 items-center">
-            <Link href={`/${locale}`} className="flex gap-2 items-center font-bold text-lg tracking-tight">
-              <span className="bg-primary text-primary-foreground px-2.5 py-1 rounded-lg">QR</span>
+            <Link
+              href={`/${locale}`}
+              className="flex gap-2 items-center font-bold text-lg tracking-tight"
+            >
+              <span className="bg-primary text-primary-foreground px-2.5 py-1 rounded-lg">
+                QR
+              </span>
               <span>{dict.common.title}</span>
             </Link>
             <span className="text-muted-foreground">/</span>
@@ -71,14 +76,15 @@ export default async function AdminDashboard({ params }: { params: Params }) {
       {/* Content */}
       <div className="flex-1 w-full max-w-5xl mx-auto px-6 py-12 flex flex-col gap-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-extrabold tracking-tight">{dict.common.admin}</h1>
-          <p className="text-muted-foreground">{dict.common.welcome}, {user.email}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            {dict.common.admin}
+          </h1>
+          <p className="text-muted-foreground">
+            {dict.common.welcome}, {user.email}
+          </p>
         </div>
 
-        <AdminDashboardForm
-          locale={locale}
-          initialProfiles={profiles || []}
-        />
+        <AdminDashboardForm locale={locale} initialProfiles={profiles || []} />
       </div>
     </main>
   );

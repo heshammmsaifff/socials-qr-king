@@ -1,18 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
+import { getDictionary, type Locale } from "@/lib/dictionaries";
+
+type Params = Promise<{ locale: string }>;
 
 async function ErrorContent({
   searchParams,
+  locale,
 }: {
   searchParams: Promise<{ error: string }>;
+  locale: string;
 }) {
   const params = await searchParams;
+  const dict = getDictionary(locale as Locale);
 
   return (
     <>
       {params?.error ? (
         <p className="text-sm text-muted-foreground">
-          Code error: {params.error}
+          {dict.common.error}: {params.error}
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
@@ -23,11 +29,16 @@ async function ErrorContent({
   );
 }
 
-export default function Page({
+export default async function Page({
+  params,
   searchParams,
 }: {
+  params: Params;
   searchParams: Promise<{ error: string }>;
 }) {
+  const { locale } = await params;
+  const dict = getDictionary(locale as Locale);
+
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
@@ -39,8 +50,8 @@ export default function Page({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Suspense>
-                <ErrorContent searchParams={searchParams} />
+              <Suspense fallback={<div>{dict.common.loading}</div>}>
+                <ErrorContent searchParams={searchParams} locale={locale} />
               </Suspense>
             </CardContent>
           </Card>

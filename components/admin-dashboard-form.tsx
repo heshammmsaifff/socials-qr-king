@@ -82,10 +82,16 @@ function MobilePreview({
   const theme = getThemeConfig(profile.theme);
   const mockupRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleDownload = async () => {
     if (!mockupRef.current) return;
     setDownloading(true);
+    setIsExporting(true);
+    
+    // Allow state change to render in the DOM before capturing
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     try {
       const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(mockupRef.current, {
@@ -102,6 +108,7 @@ function MobilePreview({
     } catch (err) {
       console.error("Failed to generate image:", err);
     } finally {
+      setIsExporting(false);
       setDownloading(false);
     }
   };
@@ -139,9 +146,16 @@ function MobilePreview({
   return (
     <div className="relative mx-auto flex flex-col items-center gap-2">
       {/* Outer Wrapper for Image Export (captures shadows and buttons without clipping) */}
-      <div ref={mockupRef} className="p-8 bg-transparent flex items-center justify-center select-none">
+      <div ref={mockupRef} className={cn("bg-transparent flex items-center justify-center select-none", isExporting ? "p-1.5" : "p-8")}>
         {/* iPhone Outer Titanium Band/Bezel */}
-        <div className="w-[304px] h-[610px] bg-gradient-to-tr from-[#1c1c1e] via-[#2c2c2e] to-[#1c1c1e] rounded-[3.5rem] p-[7px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.15),inset_0_-2px_4px_rgba(0,0,0,0.5)] border border-[#3a3a3c]/40 relative flex flex-col select-none">
+        <div 
+          className={cn(
+            "w-[304px] h-[610px] bg-gradient-to-tr from-[#1c1c1e] via-[#2c2c2e] to-[#1c1c1e] rounded-[3.5rem] p-[7px] border border-[#3a3a3c]/40 relative flex flex-col select-none",
+            isExporting
+              ? "shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),inset_0_-2px_4px_rgba(0,0,0,0.5)]"
+              : "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.15),inset_0_-2px_4px_rgba(0,0,0,0.5)]"
+          )}
+        >
           
           {/* Antenna bands (Sleek side cuts) */}
           <div className="absolute -left-[1px] top-[40px] w-[2px] h-[8px] bg-neutral-600/60 z-20" />

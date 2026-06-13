@@ -14,7 +14,7 @@ export const dictionaries = {
       welcome: "Welcome to QR Socials",
       poweredBy: "Powered by",
       instapay: "Instapay",
-      wallet: "Electronic Wallet",
+      wallet: "Wallet",
       address: "Address",
       noLinks: "No links added yet.",
       loading: "Loading...",
@@ -31,7 +31,8 @@ export const dictionaries = {
       saveNewPassword: "Save New Password",
       newPassword: "New Password",
       checkEmailTitle: "Check Your Email",
-      checkEmailDesc: "Password reset instructions have been sent to your email.",
+      checkEmailDesc:
+        "Password reset instructions have been sent to your email.",
       sendResetLink: "Send Reset Link",
       loginTitle: "Login",
       loginDesc: "Enter your email and password to access the admin dashboard.",
@@ -49,7 +50,7 @@ export const dictionaries = {
       companyAddressAr: "Company Address (Arabic)",
       logoUrl: "Logo URL",
       instapayLink: "Instapay Link(s)",
-      walletNumber: "Electronic Wallet Number(s)",
+      walletNumber: "Wallet Number(s)",
       slug: "Unique Linktree Slug (e.g. 'my-business')",
       saveProfile: "Save Profile Settings",
       manageLinks: "Manage Links",
@@ -64,7 +65,7 @@ export const dictionaries = {
       profileUpdated: "Profile updated successfully!",
       linkSaved: "Link saved successfully!",
       linkDeleted: "Link deleted successfully!",
-    }
+    },
   },
   ar: {
     common: {
@@ -96,7 +97,8 @@ export const dictionaries = {
       saveNewPassword: "حفظ كلمة المرور الجديدة",
       newPassword: "كلمة المرور الجديدة",
       checkEmailTitle: "تحقق من بريدك الإلكتروني",
-      checkEmailDesc: "تم إرسال تعليمات إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+      checkEmailDesc:
+        "تم إرسال تعليمات إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
       sendResetLink: "إرسال رابط إعادة التعيين",
       loginTitle: "تسجيل الدخول",
       loginDesc: "أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى لوحة التحكم.",
@@ -129,8 +131,8 @@ export const dictionaries = {
       profileUpdated: "تم تحديث الملف الشخصي بنجاح!",
       linkSaved: "تم حفظ الرابط بنجاح!",
       linkDeleted: "تم حذف الرابط بنجاح!",
-    }
-  }
+    },
+  },
 };
 
 export const getDictionary = (locale: Locale): typeof dictionaries.en => {

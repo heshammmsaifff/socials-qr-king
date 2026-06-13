@@ -1,3 +1,4 @@
+import { WalletCard } from "@/components/wallet-card";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { getDictionary, type Locale } from "@/lib/dictionaries";
@@ -143,7 +144,7 @@ export default async function PublicProfilePage({ params }: { params: Params }) 
                 } else {
                   let phone = urlTrimmed.replace(/[+\s-]/g, "");
                   if (phone.startsWith("0")) {
-                    phone = "2" + phone;
+                     phone = "2" + phone;
                   }
                   href = `https://wa.me/${phone}`;
                 }
@@ -214,24 +215,19 @@ export default async function PublicProfilePage({ params }: { params: Params }) 
                   ))}
 
                   {walletNumbers.map((wallet: string, idx: number) => (
-                    <div key={`wallet-${idx}`} className={`flex items-center gap-3 p-3 rounded-xl border ${theme.payWalletBg} ${theme.payWalletBorder}`}>
-                      <div className={`p-2 rounded shrink-0 ${theme.payWalletIconBg} ${theme.payWalletIconText}`}>
-                        <FaMobileAlt className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col text-left rtl:text-right">
-                        <span className={`font-bold text-sm ${theme.textColor}`}>
-                          {dict.common.wallet} {walletNumbers.length > 1 ? `#${idx + 1}` : ""}
-                        </span>
-                        <span className={`text-xs font-mono ${theme.subTextColor}`}>
-                          {wallet}
-                        </span>
-                      </div>
-                    </div>
+                    <WalletCard
+                      key={`wallet-${idx}`}
+                      wallet={wallet}
+                      label={`${dict.common.wallet}${walletNumbers.length > 1 ? ` #${idx + 1}` : ""}`}
+                      theme={theme}
+                      locale={locale}
+                    />
                   ))}
                 </div>
               </div>
             );
           })()}
+
         </div>
       </div>
 

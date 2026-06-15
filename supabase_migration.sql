@@ -56,3 +56,48 @@ CREATE POLICY "Users can delete own profile"
 ON public.profiles 
 FOR DELETE 
 USING (auth.uid() = user_id);
+
+-- 5. Create storage bucket for assets and configure policies
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('socials-assets', 'socials-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Enable RLS on storage.objects if not already enabled (by default it is enabled in Supabase)
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Drop old storage policies if they exist to avoid duplication errors
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated updates" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes" ON storage.objects;
+
+-- Create policies for storage.objects
+CREATE POLICY "Public Access" 
+ON storage.objects 
+FOR SELECT 
+USING (bucket_id = 'socials-assets');
+
+CREATE POLICY "Allow authenticated uploads" 
+ON storage.objects 
+FOR INSERT 
+WITH CHECK (
+  bucket_id = 'socials-assets' AND
+  auth.role() = 'authenticated'
+);
+
+CREATE POLICY "Allow authenticated updates" 
+ON storage.objects 
+FOR UPDATE 
+USING (
+  bucket_id = 'socials-assets' AND
+  auth.role() = 'authenticated'
+);
+
+CREATE POLICY "Allow authenticated deletes" 
+ON storage.objects 
+FOR DELETE 
+USING (
+  bucket_id = 'socials-assets' AND
+  auth.role() = 'authenticated'
+);
+

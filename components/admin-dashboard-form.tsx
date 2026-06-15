@@ -35,9 +35,11 @@ import {
   FaArrowLeft,
   FaPen,
   FaQrcode,
+  FaUpload,
 } from "react-icons/fa6";
 import { FaExternalLinkAlt, FaMapMarkerAlt, FaMobileAlt } from "react-icons/fa";
 import { QRCodeSVG } from "qrcode.react";
+import imageCompression from "browser-image-compression";
 
 interface Profile {
   id: string;
@@ -53,6 +55,7 @@ interface Profile {
   slug: string;
   location: string | null;
   theme: string | null;
+  updated_at?: string;
 }
 
 interface LinkItem {
@@ -69,6 +72,13 @@ interface AdminDashboardFormProps {
   initialProfiles: Profile[];
 }
 
+const getBustUrl = (url: string | null | undefined, updatedAt?: string) => {
+  if (!url) return undefined;
+  if (url.startsWith("blob:") || url.startsWith("data:")) return url;
+  const cacheBuster = updatedAt ? new Date(updatedAt).getTime() : "";
+  return cacheBuster ? `${url}?t=${cacheBuster}` : url;
+};
+
 // Mobile Mockup Preview Component
 function MobilePreview({
   profile,
@@ -81,6 +91,7 @@ function MobilePreview({
 }) {
   const dict = getDictionary(locale as Locale);
   const theme = getThemeConfig(profile.theme);
+
   const mockupRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -228,17 +239,23 @@ function MobilePreview({
 
             {/* Inner Screen Content - Simulated webpage */}
             <div 
-              className={`flex-1 overflow-y-auto no-scrollbar ${theme.textColor} flex flex-col items-center justify-between p-4 pt-12 pb-5 bg-gradient-to-b ${theme.mainBg} bg-cover bg-center`}
+              key={profile.theme || "default"}
+              className={`flex-1 overflow-y-auto no-scrollbar ${theme.textColor} flex flex-col items-center justify-between p-4 pt-12 pb-5 bg-gradient-to-b ${theme.mainBg} bg-cover bg-center ${
+                profile.background_image_url ? "profile-bg-overlay" : ""
+              }`}
               style={
                 profile.background_image_url
-                  ? { backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(${profile.background_image_url})` }
+                  ? { "--profile-bg-url": `url(${getBustUrl(profile.background_image_url, profile.updated_at)})` } as React.CSSProperties
                   : undefined
               }
             >
               
               {/* Language Switcher Simulation */}
               <div className="w-full flex justify-end mb-3 shrink-0">
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[9px] font-bold ${theme.textColor} ${theme.langBtnBg} ${theme.langBtnBorder}`}>
+                <div 
+                  style={{ animationDelay: "50ms" }}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[9px] font-bold animate-premium-enter ${theme.textColor} ${theme.langBtnBg} ${theme.langBtnBorder}`}
+                >
                   <FaGlobe className={`w-2.5 h-2.5 ${theme.primaryColor}`} />
                   <span>{otherLocaleName}</span>
                 </div>
@@ -249,26 +266,33 @@ function MobilePreview({
                 {/* Logo */}
                 {profile.logo_url ? (
                   <img
-                    src={profile.logo_url}
+                    src={getBustUrl(profile.logo_url, profile.updated_at)}
                     alt="Logo"
                     crossOrigin="anonymous"
-                    className={`w-14 h-14 rounded-full object-cover border shadow-md ${theme.logoBorder}`}
+                    style={{ animationDelay: "150ms" }}
+                    className={`w-14 h-14 rounded-full object-cover border shadow-md animate-premium-enter ${theme.logoBorder}`}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
                   />
                 ) : (
-                  <div className={`w-14 h-14 rounded-full bg-slate-800 border flex items-center justify-center shadow-md ${theme.logoBorder}`}>
+                  <div 
+                    style={{ animationDelay: "150ms" }}
+                    className={`w-14 h-14 rounded-full bg-slate-800 border flex items-center justify-center shadow-md animate-premium-enter ${theme.logoBorder}`}
+                  >
                     <FaBriefcase className="w-6 h-6 text-slate-500" />
                   </div>
                 )}
 
                 {/* Identity */}
-                <div className="text-center flex flex-col gap-0.5 w-full px-1">
+                <div 
+                  style={{ animationDelay: "250ms" }}
+                  className="text-center flex flex-col gap-0.5 w-full px-1 animate-premium-enter"
+                >
                   <h1 className={`text-xs font-extrabold truncate bg-clip-text text-transparent bg-gradient-to-r ${theme.companyNameColor}`}>
                     {displayName}
                   </h1>
-                  {displayAddress && (
+                  {displayAddress && profile.location && (
                     <p className={`text-[9px] flex items-center justify-center gap-1 truncate ${theme.subTextColor}`}>
                       <FaMapMarkerAlt className={`w-2 h-2 shrink-0 ${theme.primaryColor}`} />
                       <span className="truncate">{displayAddress}</span>
@@ -279,7 +303,7 @@ function MobilePreview({
                 {/* Links list */}
                 <div className="w-full flex flex-col gap-1.5 mt-1">
                   {links && links.length > 0 ? (
-                    links.map((link) => {
+                    links.map((link, idx) => {
                       if (!link.is_active) return null;
                       const platform = getPlatformConfig(link.platform_name);
                       const platformDisplayName = platform
@@ -292,7 +316,8 @@ function MobilePreview({
                       return (
                         <div
                           key={link.id}
-                          className={`w-full py-1.5 px-2.5 border rounded-xl font-bold flex justify-between items-center text-[10px] ${theme.linkBg} ${theme.linkBorder} ${theme.linkHoverBorder}`}
+                          style={{ animationDelay: `${350 + idx * 80}ms` }}
+                          className={`w-full py-1.5 px-2.5 border rounded-xl font-bold flex justify-between items-center text-[10px] animate-premium-enter ${theme.linkBg} ${theme.linkBorder} ${theme.linkHoverBorder}`}
                         >
                           <div className="flex items-center gap-1.5 truncate">
                             <PlatformIcon
@@ -326,7 +351,10 @@ function MobilePreview({
                   if (instapayLinks.length === 0 && walletNumbers.length === 0) return null;
 
                   return (
-                    <div className={`w-full p-2.5 rounded-xl border flex flex-col gap-1.5 mt-2 text-left rtl:text-right ${theme.payCardBg} ${theme.payCardBorder}`}>
+                    <div 
+                      style={{ animationDelay: `${350 + (links ? links.filter(l => l.is_active).length : 0) * 80 + 100}ms` }}
+                      className={`w-full p-2.5 rounded-xl border flex flex-col gap-1.5 mt-2 text-left rtl:text-right animate-premium-enter ${theme.payCardBg} ${theme.payCardBorder}`}
+                    >
                       <span className={`font-extrabold text-[8px] border-b border-current/10 pb-0.5 uppercase ${theme.cardTitleColor}`}>
                         💳 {locale === "ar" ? "وسائل الدفع" : "Payment Options"}
                       </span>
@@ -367,7 +395,10 @@ function MobilePreview({
               </div>
 
               {/* Footer */}
-              <footer className={`w-full text-center text-[8px] mt-2 shrink-0 ${theme.subTextColor}`}>
+              <footer 
+                style={{ animationDelay: `${350 + (links ? links.filter(l => l.is_active).length : 0) * 80 + 180}ms` }}
+                className={`w-full text-center text-[8px] mt-2 shrink-0 animate-premium-enter ${theme.subTextColor}`}
+              >
                 <p>
                   {dict.common.poweredBy}{" "}
                   <span className={`font-bold ${theme.primaryColor}`}>
@@ -441,20 +472,44 @@ export function AdminDashboardForm({
   const [linksLoading, setLinksLoading] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<number | null>(null);
 
+  // File upload states for Creation Form
+  const [newLogoFile, setNewLogoFile] = useState<File | null>(null);
+  const [newBgFile, setNewBgFile] = useState<File | null>(null);
+  const [newLogoPreview, setNewLogoPreview] = useState("");
+  const [newBgPreview, setNewBgPreview] = useState("");
+
+  // File upload states for Edit Form
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editBgFile, setEditBgFile] = useState<File | null>(null);
+  const [editLogoPreview, setEditLogoPreview] = useState("");
+  const [editBgPreview, setEditBgPreview] = useState("");
+
+  // Cleanup & loading state
+  const [cleanLoading, setCleanLoading] = useState(false);
+
   // Creation State
   const [newSlug, setNewSlug] = useState("");
   const [newCompanyNameEn, setNewCompanyNameEn] = useState("");
   const [newCompanyNameAr, setNewCompanyNameAr] = useState("");
   const [newCompanyAddressEn, setNewCompanyAddressEn] = useState("");
   const [newCompanyAddressAr, setNewCompanyAddressAr] = useState("");
-  const [newLogoUrl, setNewLogoUrl] = useState("");
-  const [newBackgroundImageUrl, setNewBackgroundImageUrl] = useState("");
   const [newInstapayLinks, setNewInstapayLinks] = useState<string[]>([""]);
   const [newWalletNumbers, setNewWalletNumbers] = useState<string[]>([""]);
   const [newLocation, setNewLocation] = useState("");
   const [newTheme, setNewTheme] = useState("theme1");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Helper function for compressing images and converting to WebP
+  const compressAndConvertToWebP = async (file: File, isLogo: boolean): Promise<Blob> => {
+    const options = {
+      maxSizeMB: isLogo ? 0.15 : 0.4,
+      maxWidthOrHeight: isLogo ? 400 : 1920,
+      useWebWorker: true,
+      fileType: "image/webp",
+    };
+    return await imageCompression(file, options);
+  };
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = (() => {
@@ -465,8 +520,8 @@ export function AdminDashboardForm({
         newCompanyNameAr !== "" ||
         newCompanyAddressEn !== "" ||
         newCompanyAddressAr !== "" ||
-        newLogoUrl !== "" ||
-        newBackgroundImageUrl !== "" ||
+        newLogoFile !== null ||
+        newBgFile !== null ||
         (newInstapayLinks.length > 1 || newInstapayLinks[0] !== "") ||
         (newWalletNumbers.length > 1 || newWalletNumbers[0] !== "") ||
         newLocation !== "" ||
@@ -480,6 +535,8 @@ export function AdminDashboardForm({
       const clean = (val: string | null) => (val || "").trim();
 
       return (
+        editLogoFile !== null ||
+        editBgFile !== null ||
         clean(editingProfile.slug) !== clean(original.slug) ||
         clean(editingProfile.company_name_en) !== clean(original.company_name_en) ||
         clean(editingProfile.company_name_ar) !== clean(original.company_name_ar) ||
@@ -582,6 +639,47 @@ export function AdminDashboardForm({
     }
   };
 
+  // File Preview Effects
+  useEffect(() => {
+    if (newLogoFile) {
+      const url = URL.createObjectURL(newLogoFile);
+      setNewLogoPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setNewLogoPreview("");
+    }
+  }, [newLogoFile]);
+
+  useEffect(() => {
+    if (newBgFile) {
+      const url = URL.createObjectURL(newBgFile);
+      setNewBgPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setNewBgPreview("");
+    }
+  }, [newBgFile]);
+
+  useEffect(() => {
+    if (editLogoFile) {
+      const url = URL.createObjectURL(editLogoFile);
+      setEditLogoPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setEditLogoPreview("");
+    }
+  }, [editLogoFile]);
+
+  useEffect(() => {
+    if (editBgFile) {
+      const url = URL.createObjectURL(editBgFile);
+      setEditBgPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setEditBgPreview("");
+    }
+  }, [editBgFile]);
+
   // Sync editing profile and fetch links when selected profile changes
   useEffect(() => {
     if (selectedProfileId) {
@@ -594,6 +692,11 @@ export function AdminDashboardForm({
         setNewLinkPlatform("");
         setNewLinkUrl("");
         setNewLinkActive(true);
+        // Reset edit file uploads when switching profiles
+        setEditLogoFile(null);
+        setEditBgFile(null);
+        setEditLogoPreview("");
+        setEditBgPreview("");
       }
     } else {
       setEditingProfile(null);
@@ -694,8 +797,8 @@ export function AdminDashboardForm({
           company_address: newCompanyAddressAr || newCompanyAddressEn || null,
           company_address_en: newCompanyAddressEn || null,
           company_address_ar: newCompanyAddressAr || null,
-          logo_url: newLogoUrl || null,
-          background_image_url: newBackgroundImageUrl || null,
+          logo_url: null,
+          background_image_url: null,
           instapay_link: newInstapayLinks.filter(Boolean).map((l) => l.trim()).join(",") || null,
           wallet_number: newWalletNumbers.filter(Boolean).map((w) => w.trim()).join(",") || null,
           location: newLocation || null,
@@ -716,9 +819,66 @@ export function AdminDashboardForm({
         throw error;
       }
 
-      setProfiles([data, ...profiles]);
-      setSelectedProfileId(data.id);
-      setEditingProfile(data);
+      let uploadedLogoUrl = null;
+      let uploadedBgUrl = null;
+
+      if (userId) {
+        // Upload Logo if selected
+        if (newLogoFile) {
+          try {
+            const compressedLogo = await compressAndConvertToWebP(newLogoFile, true);
+            const path = `uploads/${userId}/logo_${data.id}.webp`;
+            const { error: uploadError } = await supabase.storage
+              .from("socials-assets")
+              .upload(path, compressedLogo, {
+                contentType: "image/webp",
+                upsert: true,
+              });
+            if (uploadError) throw uploadError;
+            uploadedLogoUrl = supabase.storage.from("socials-assets").getPublicUrl(path).data.publicUrl;
+          } catch (uploadErr) {
+            console.error("Error uploading logo:", uploadErr);
+          }
+        }
+
+        // Upload Background if selected
+        if (newBgFile) {
+          try {
+            const compressedBg = await compressAndConvertToWebP(newBgFile, false);
+            const path = `uploads/${userId}/background_${data.id}.webp`;
+            const { error: uploadError } = await supabase.storage
+              .from("socials-assets")
+              .upload(path, compressedBg, {
+                contentType: "image/webp",
+                upsert: true,
+              });
+            if (uploadError) throw uploadError;
+            uploadedBgUrl = supabase.storage.from("socials-assets").getPublicUrl(path).data.publicUrl;
+          } catch (uploadErr) {
+            console.error("Error uploading background:", uploadErr);
+          }
+        }
+      }
+
+      // Update the profile row with actual public URLs if any were uploaded
+      let updatedData = data;
+      if (uploadedLogoUrl || uploadedBgUrl) {
+        const { data: updateData, error: updateError } = await supabase
+          .from("profiles")
+          .update({
+            logo_url: uploadedLogoUrl || null,
+            background_image_url: uploadedBgUrl || null,
+          })
+          .eq("id", data.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        updatedData = updateData;
+      }
+
+      setProfiles([updatedData, ...profiles]);
+      setSelectedProfileId(updatedData.id);
+      setEditingProfile(updatedData);
 
       // Clear creation form fields
       setNewSlug("");
@@ -726,8 +886,8 @@ export function AdminDashboardForm({
       setNewCompanyNameAr("");
       setNewCompanyAddressEn("");
       setNewCompanyAddressAr("");
-      setNewLogoUrl("");
-      setNewBackgroundImageUrl("");
+      setNewLogoFile(null);
+      setNewBgFile(null);
       setNewInstapayLinks([""]);
       setNewWalletNumbers([""]);
       setNewLocation("");
@@ -757,6 +917,56 @@ export function AdminDashboardForm({
       .replace(/\s+/g, "-");
 
     try {
+      const { data: userSession } = await supabase.auth.getUser();
+      const userId = userSession?.user?.id || null;
+
+      let finalLogoUrl = editingProfile.logo_url;
+      let finalBgUrl = editingProfile.background_image_url;
+
+      if (userId) {
+        if (editLogoFile) {
+          const compressedLogo = await compressAndConvertToWebP(editLogoFile, true);
+          const path = `uploads/${userId}/logo_${editingProfile.id}.webp`;
+          const { error: uploadError } = await supabase.storage
+            .from("socials-assets")
+            .upload(path, compressedLogo, {
+              contentType: "image/webp",
+              upsert: true,
+            });
+          if (uploadError) throw uploadError;
+          finalLogoUrl = supabase.storage.from("socials-assets").getPublicUrl(path).data.publicUrl;
+        } else if (!editingProfile.logo_url) {
+          try {
+            const path = `uploads/${userId}/logo_${editingProfile.id}.webp`;
+            await supabase.storage.from("socials-assets").remove([path]);
+          } catch (delErr) {
+            console.error("Failed to delete logo from storage:", delErr);
+          }
+          finalLogoUrl = null;
+        }
+
+        if (editBgFile) {
+          const compressedBg = await compressAndConvertToWebP(editBgFile, false);
+          const path = `uploads/${userId}/background_${editingProfile.id}.webp`;
+          const { error: uploadError } = await supabase.storage
+            .from("socials-assets")
+            .upload(path, compressedBg, {
+              contentType: "image/webp",
+              upsert: true,
+            });
+          if (uploadError) throw uploadError;
+          finalBgUrl = supabase.storage.from("socials-assets").getPublicUrl(path).data.publicUrl;
+        } else if (!editingProfile.background_image_url) {
+          try {
+            const path = `uploads/${userId}/background_${editingProfile.id}.webp`;
+            await supabase.storage.from("socials-assets").remove([path]);
+          } catch (delErr) {
+            console.error("Failed to delete background from storage:", delErr);
+          }
+          finalBgUrl = null;
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -765,8 +975,8 @@ export function AdminDashboardForm({
           company_address: editingProfile.company_address_ar || editingProfile.company_address_en || null,
           company_address_en: editingProfile.company_address_en,
           company_address_ar: editingProfile.company_address_ar,
-          logo_url: editingProfile.logo_url,
-          background_image_url: editingProfile.background_image_url,
+          logo_url: finalLogoUrl,
+          background_image_url: finalBgUrl,
           instapay_link: editingProfile.instapay_link,
           wallet_number: editingProfile.wallet_number,
           slug: formattedSlug,
@@ -786,13 +996,23 @@ export function AdminDashboardForm({
         throw error;
       }
 
+      const updatedProfile = {
+        ...editingProfile,
+        slug: formattedSlug,
+        logo_url: finalLogoUrl,
+        background_image_url: finalBgUrl,
+      };
+
       setProfiles(
         profiles.map((p) =>
           p.id === editingProfile.id
-            ? { ...editingProfile, slug: formattedSlug }
+            ? updatedProfile
             : p,
         ),
       );
+      setEditingProfile(updatedProfile);
+      setEditLogoFile(null);
+      setEditBgFile(null);
 
       setProfileMessage({
         type: "success",
@@ -823,6 +1043,19 @@ export function AdminDashboardForm({
       return;
 
     try {
+      const { data: userSession } = await supabase.auth.getUser();
+      const userId = userSession?.user?.id || null;
+
+      if (userId) {
+        const logoPath = `uploads/${userId}/logo_${profileId}.webp`;
+        const bgPath = `uploads/${userId}/background_${profileId}.webp`;
+        try {
+          await supabase.storage.from("socials-assets").remove([logoPath, bgPath]);
+        } catch (storageErr) {
+          console.error("Error deleting profile files from storage:", storageErr);
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
         .delete()
@@ -843,6 +1076,86 @@ export function AdminDashboardForm({
       }
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to delete page");
+    }
+  };
+
+  // Clean Unused Images Handler
+  const handleCleanUnusedImages = async () => {
+    const confirmText = locale === "ar"
+      ? "هل أنت متأكد من حذف جميع الصور غير المستخدمة في أي slug؟ سيؤدي هذا لتوفير المساحة."
+      : "Are you sure you want to delete all unused images across all your slugs? This will free up storage space.";
+    if (!confirm(confirmText)) return;
+
+    setCleanLoading(true);
+
+    try {
+      const { data: userSession } = await supabase.auth.getUser();
+      const userId = userSession?.user?.id;
+      if (!userId) throw new Error("User session not found");
+
+      const userFolder = `uploads/${userId}`;
+      const { data: files, error: listError } = await supabase.storage
+        .from("socials-assets")
+        .list(userFolder);
+
+      if (listError) throw listError;
+
+      if (!files || files.length === 0) {
+        alert(
+          locale === "ar"
+            ? "لا توجد صور في المجلد الخاص بك لحذفها."
+            : "No images found in your folder to clean up."
+        );
+        return;
+      }
+
+      const activeUrls = new Set<string>();
+      profiles.forEach((p) => {
+        if (p.logo_url) activeUrls.add(p.logo_url);
+        if (p.background_image_url) activeUrls.add(p.background_image_url);
+      });
+
+      const filesToDelete: string[] = [];
+      for (const file of files) {
+        if (file.metadata && file.metadata.mimetype === undefined) {
+          continue; // It's a directory
+        }
+
+        const filePath = `${userFolder}/${file.name}`;
+        const filePublicUrl = supabase.storage.from("socials-assets").getPublicUrl(filePath).data.publicUrl;
+
+        if (!activeUrls.has(filePublicUrl)) {
+          filesToDelete.push(filePath);
+        }
+      }
+
+      if (filesToDelete.length === 0) {
+        alert(
+          locale === "ar"
+            ? "جميع الصور الموجودة مستخدمة حالياً. لا يوجد شيء لحذفه."
+            : "All existing images are currently in use. Nothing to clean up."
+        );
+        return;
+      }
+
+      const { error: deleteError } = await supabase.storage
+        .from("socials-assets")
+        .remove(filesToDelete);
+
+      if (deleteError) throw deleteError;
+
+      alert(
+        locale === "ar"
+          ? `تم تنظيف ${filesToDelete.length} من الصور غير المستخدمة بنجاح.`
+          : `Successfully cleaned up ${filesToDelete.length} unused images.`
+      );
+    } catch (err: unknown) {
+      console.error("Cleanup error:", err);
+      alert(
+        err instanceof Error ? err.message : "Failed to clean up unused images"
+      );
+    } finally {
+      setCleanLoading(false);
     }
   };
 
@@ -1008,44 +1321,62 @@ export function AdminDashboardForm({
     return (
       <>
         <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-card p-6 rounded-2xl border border-border/40 shadow-sm gap-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <FaListUl className="w-5 h-5 text-primary" />
-              <span>
-                {locale === "ar" ? "الصفحات الحالية" : "Current Pages"}
-              </span>
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {locale === "ar"
-                ? "إدارة وتعديل صفحات الهبوط الخاصة بك"
-                : "Manage and edit your landing pages"}
-            </p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-card p-6 rounded-2xl border border-border/40 shadow-sm gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <FaListUl className="w-5 h-5 text-primary" />
+                <span>
+                  {locale === "ar" ? "الصفحات الحالية" : "Current Pages"}
+                </span>
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {locale === "ar"
+                  ? "إدارة وتعديل صفحات الهبوط الخاصة بك"
+                  : "Manage and edit your landing pages"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <Button
+                variant="outline"
+                disabled={cleanLoading}
+                onClick={handleCleanUnusedImages}
+                className="flex items-center gap-2 shadow-sm border-rose-500/25 hover:border-rose-500/50 hover:bg-rose-500/10 text-rose-500 transition-all"
+              >
+                {cleanLoading ? (
+                  <FaSpinner className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FaTrash className="w-4 h-4" />
+                )}
+                <span>
+                  {locale === "ar" ? "تنظيف الصور غير المستخدمة" : "Clean Unused Images"}
+                </span>
+              </Button>
+              <Button
+                onClick={() => {
+                  setNewSlug("");
+                  setNewCompanyNameEn("");
+                  setNewCompanyNameAr("");
+                  setNewCompanyAddressEn("");
+                  setNewCompanyAddressAr("");
+                  setNewLogoFile(null);
+                  setNewBgFile(null);
+                  setNewInstapayLinks([""]);
+                  setNewWalletNumbers([""]);
+                  setNewLocation("");
+                  setCreateError(null);
+                  setView("create");
+                }}
+                className="flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <FaFolderPlus className="w-4 h-4" />
+                <span>
+                  {locale === "ar" ? "إنشاء صفحة جديدة" : "Create New Page"}
+                </span>
+              </Button>
+            </div>
           </div>
-          <Button
-            onClick={() => {
-              setNewSlug("");
-              setNewCompanyNameEn("");
-              setNewCompanyNameAr("");
-              setNewCompanyAddressEn("");
-              setNewCompanyAddressAr("");
-              setNewLogoUrl("");
-              setNewInstapayLinks([""]);
-              setNewWalletNumbers([""]);
-              setNewLocation("");
-              setCreateError(null);
-              setView("create");
-            }}
-            className="flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <FaFolderPlus className="w-4 h-4" />
-            <span>
-              {locale === "ar" ? "إنشاء صفحة جديدة" : "Create New Page"}
-            </span>
-          </Button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {profiles.length > 0 ? (
             profiles.map((p) => {
               const displayName =
@@ -1084,7 +1415,7 @@ export function AdminDashboardForm({
                     const cardAddress = locale === "ar"
                       ? p.company_address_ar || p.company_address_en || p.company_address
                       : p.company_address_en || p.company_address_ar || p.company_address;
-                    if (!cardAddress) return null;
+                    if (!cardAddress || !p.location) return null;
                     return (
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
                         <FaMapMarkerAlt className="w-3.5 h-3.5 text-primary/80 shrink-0" />
@@ -1255,14 +1586,21 @@ export function AdminDashboardForm({
         company_address: newCompanyAddressAr || newCompanyAddressEn || null,
         company_address_en: newCompanyAddressEn,
         company_address_ar: newCompanyAddressAr,
-        logo_url: newLogoUrl,
-        background_image_url: newBackgroundImageUrl,
+        logo_url: newLogoPreview || null,
+        background_image_url: newBgPreview || null,
         instapay_link: newInstapayLinks.filter(Boolean).map((l) => l.trim()).join(","),
         wallet_number: newWalletNumbers.filter(Boolean).map((w) => w.trim()).join(","),
         location: newLocation,
         theme: newTheme,
       }
-    : editingProfile || {};
+    : editingProfile
+      ? {
+          ...editingProfile,
+          logo_url: editLogoPreview || editingProfile.logo_url,
+          background_image_url: editBgPreview || editingProfile.background_image_url,
+          updated_at: editingProfile.updated_at,
+        }
+      : {};
 
   const previewLinks = isEditMode ? links : [];
 
@@ -1406,25 +1744,105 @@ export function AdminDashboardForm({
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="new_logo_url">{dict.admin.logoUrl}</Label>
-                    <Input
-                      id="new_logo_url"
-                      type="url"
-                      placeholder="https://example.com/logo.png"
-                      value={newLogoUrl}
-                      onChange={(e) => setNewLogoUrl(e.target.value)}
-                    />
+                    <Label>{dict.admin.logoUrl}</Label>
+                    {newLogoPreview ? (
+                      <div className="flex items-center gap-4 p-3 bg-slate-900/5 dark:bg-slate-950/20 rounded-xl border border-border/40">
+                        <img
+                          src={newLogoPreview}
+                          alt="Logo Preview"
+                          className="w-16 h-16 rounded-full object-cover border border-border/60"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold truncate">
+                            {newLogoFile?.name || "logo.webp"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {locale === "ar" ? "جاهز للرفع (webp)" : "Ready to upload (webp)"}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setNewLogoFile(null)}
+                        >
+                          {locale === "ar" ? "إزالة" : "Remove"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-900/5 hover:bg-primary/5 transition-all relative min-h-[100px]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setNewLogoFile(e.target.files[0]);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                        <FaUpload className="w-6 h-6 text-muted-foreground" />
+                        <span className="text-xs font-medium text-center">
+                          {locale === "ar"
+                            ? "اسحب وأفلت شعار الشركة هنا، أو انقر للاختيار"
+                            : "Drag & drop company logo here, or click to browse"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {locale === "ar" ? "الحجم الأقصى 150 كيلوبايت" : "Max size 150KB"}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="new_bg_image_url">{dict.admin.backgroundUrl}</Label>
-                    <Input
-                      id="new_bg_image_url"
-                      type="url"
-                      placeholder="https://example.com/background.jpg"
-                      value={newBackgroundImageUrl}
-                      onChange={(e) => setNewBackgroundImageUrl(e.target.value)}
-                    />
+                    <Label>{dict.admin.backgroundUrl}</Label>
+                    {newBgPreview ? (
+                      <div className="flex items-center gap-4 p-3 bg-slate-900/5 dark:bg-slate-950/20 rounded-xl border border-border/40">
+                        <img
+                          src={newBgPreview}
+                          alt="Background Preview"
+                          className="w-24 h-16 rounded-lg object-cover border border-border/60"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold truncate">
+                            {newBgFile?.name || "background.webp"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {locale === "ar" ? "جاهز للرفع (webp)" : "Ready to upload (webp)"}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setNewBgFile(null)}
+                        >
+                          {locale === "ar" ? "إزالة" : "Remove"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-900/5 hover:bg-primary/5 transition-all relative min-h-[100px]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setNewBgFile(e.target.files[0]);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                        <FaUpload className="w-6 h-6 text-muted-foreground" />
+                        <span className="text-xs font-medium text-center">
+                          {locale === "ar"
+                            ? "اسحب وأفلت صورة الخلفية هنا، أو انقر للاختيار"
+                            : "Drag & drop background image here, or click to browse"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {locale === "ar" ? "الحجم الأقصى 400 كيلوبايت" : "Max size 400KB"}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-2 border border-border/40 p-4 rounded-xl bg-slate-900/10 dark:bg-slate-950/20">
@@ -1703,38 +2121,121 @@ export function AdminDashboardForm({
                       </div>
 
                       <div className="grid gap-2">
-                        <Label htmlFor="edit_logo_url">
-                          {dict.admin.logoUrl}
-                        </Label>
-                        <Input
-                          id="edit_logo_url"
-                          type="url"
-                          value={editingProfile.logo_url || ""}
-                          onChange={(e) =>
-                            setEditingProfile({
-                              ...editingProfile,
-                              logo_url: e.target.value,
-                            })
-                          }
-                        />
+                        <Label>{dict.admin.logoUrl}</Label>
+                        {editLogoPreview || editingProfile.logo_url ? (
+                          <div className="flex items-center gap-4 p-3 bg-slate-900/5 dark:bg-slate-950/20 rounded-xl border border-border/40">
+                            <img
+                              src={getBustUrl(editLogoPreview || editingProfile.logo_url, editingProfile.updated_at)}
+                              alt="Logo Preview"
+                              className="w-16 h-16 rounded-full object-cover border border-border/60"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate">
+                                {editLogoFile ? editLogoFile.name : (locale === "ar" ? "الشعار الحالي" : "Current Logo")}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {editLogoFile 
+                                  ? (locale === "ar" ? "جاهز للرفع (webp)" : "Ready to upload (webp)")
+                                  : (locale === "ar" ? "صورة مرفوعة مسبقاً" : "Previously uploaded image")}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setEditLogoFile(null);
+                                setEditingProfile({
+                                  ...editingProfile,
+                                  logo_url: null,
+                                });
+                              }}
+                            >
+                              {locale === "ar" ? "إزالة" : "Remove"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-900/5 hover:bg-primary/5 transition-all relative min-h-[100px]">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setEditLogoFile(e.target.files[0]);
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                            <FaUpload className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-xs font-medium text-center">
+                              {locale === "ar"
+                                ? "اسحب وأفلت شعار الشركة هنا، أو انقر للاختيار"
+                                : "Drag & drop company logo here, or click to browse"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {locale === "ar" ? "الحجم الأقصى 150 كيلوبايت" : "Max size 150KB"}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid gap-2">
-                        <Label htmlFor="edit_bg_image_url">
-                          {dict.admin.backgroundUrl}
-                        </Label>
-                        <Input
-                          id="edit_bg_image_url"
-                          type="url"
-                          placeholder="https://example.com/background.jpg"
-                          value={editingProfile.background_image_url || ""}
-                          onChange={(e) =>
-                            setEditingProfile({
-                              ...editingProfile,
-                              background_image_url: e.target.value || null,
-                            })
-                          }
-                        />
+                        <Label>{dict.admin.backgroundUrl}</Label>
+                        {editBgPreview || editingProfile.background_image_url ? (
+                          <div className="flex items-center gap-4 p-3 bg-slate-900/5 dark:bg-slate-950/20 rounded-xl border border-border/40">
+                            <img
+                              src={getBustUrl(editBgPreview || editingProfile.background_image_url, editingProfile.updated_at)}
+                              alt="Background Preview"
+                              className="w-24 h-16 rounded-lg object-cover border border-border/60"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate">
+                                {editBgFile ? editBgFile.name : (locale === "ar" ? "صورة الخلفية الحالية" : "Current Background")}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {editBgFile 
+                                  ? (locale === "ar" ? "جاهز للرفع (webp)" : "Ready to upload (webp)")
+                                  : (locale === "ar" ? "صورة مرفوعة مسبقاً" : "Previously uploaded image")}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setEditBgFile(null);
+                                setEditingProfile({
+                                  ...editingProfile,
+                                  background_image_url: null,
+                                });
+                              }}
+                            >
+                              {locale === "ar" ? "إزالة" : "Remove"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-900/5 hover:bg-primary/5 transition-all relative min-h-[100px]">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setEditBgFile(e.target.files[0]);
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                            <FaUpload className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-xs font-medium text-center">
+                              {locale === "ar"
+                                ? "اسحب وأفلت صورة الخلفية هنا، أو انقر للاختيار"
+                                : "Drag & drop background image here, or click to browse"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {locale === "ar" ? "الحجم الأقصى 400 كيلوبايت" : "Max size 400KB"}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid gap-2 border border-border/40 p-4 rounded-xl bg-slate-900/10 dark:bg-slate-950/20">

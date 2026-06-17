@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { cn, getBustUrl } from "@/lib/utils";
 import { PLATFORMS, PlatformIcon, getPlatformConfig } from "@/lib/platforms";
 import { THEMES, getThemeConfig } from "@/lib/themes";
 import {
@@ -72,13 +72,6 @@ interface AdminDashboardFormProps {
   initialProfiles: Profile[];
 }
 
-const getBustUrl = (url: string | null | undefined, updatedAt?: string) => {
-  if (!url) return undefined;
-  if (url.startsWith("blob:") || url.startsWith("data:")) return url;
-  const cacheBuster = updatedAt ? new Date(updatedAt).getTime() : "";
-  return cacheBuster ? `${url}?t=${cacheBuster}` : url;
-};
-
 // Mobile Mockup Preview Component
 function MobilePreview({
   profile,
@@ -109,8 +102,9 @@ function MobilePreview({
       const dataUrl = await toPng(mockupRef.current, {
         quality: 1.0,
         pixelRatio: 3, // Ultra-high resolution 3x scale!
-        cacheBust: true,
+        cacheBust: false,
         backgroundColor: "transparent", // Transparent background so it blends anywhere
+        imagePlaceholder: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", // Fallback transparent pixel if an image fails to load
       });
 
       const link = document.createElement("a");

@@ -13,6 +13,7 @@ import { FaMapMarkerAlt, FaMobileAlt } from "react-icons/fa";
 import Link from "next/link";
 import { PlatformIcon, getPlatformConfig } from "@/lib/platforms";
 import { getThemeConfig } from "@/lib/themes";
+import { getBustUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,8 @@ export default async function PublicProfilePage({
   const isRtl = locale === "ar";
   const theme = getThemeConfig(profile.theme);
 
-  const cacheBuster = profile.updated_at ? new Date(profile.updated_at).getTime() : "";
-  const logoUrl = profile.logo_url ? `${profile.logo_url}?t=${cacheBuster}` : null;
-  const backgroundImageUrl = profile.background_image_url ? `${profile.background_image_url}?t=${cacheBuster}` : null;
+  const logoUrl = getBustUrl(profile.logo_url, profile.updated_at) || null;
+  const backgroundImageUrl = getBustUrl(profile.background_image_url, profile.updated_at) || null;
 
   return (
     <main

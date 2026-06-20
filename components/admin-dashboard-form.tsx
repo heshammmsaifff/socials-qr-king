@@ -88,6 +88,7 @@ function MobilePreview({
   const mockupRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"standard" | "qr">("standard");
 
   const handleDownload = async () => {
     if (!mockupRef.current) return;
@@ -140,8 +141,6 @@ function MobilePreview({
         profile.company_address_ar ||
         profile.company_address;
 
-  const otherLocaleName = locale === "en" ? "العربية" : "English";
-
   const isLight =
     theme.textColor.includes("text-zinc-900") ||
     theme.textColor.includes("text-slate-800") ||
@@ -151,6 +150,36 @@ function MobilePreview({
 
   return (
     <div className="relative mx-auto flex flex-col items-center gap-2">
+      {/* Option Toggler */}
+      <div className="flex bg-slate-900/60 p-1 rounded-xl border border-slate-800 gap-1 w-full max-w-[280px] mb-2 select-none text-slate-100">
+        <button
+          type="button"
+          onClick={() => setPreviewMode("standard")}
+          className={cn(
+            "flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5",
+            previewMode === "standard"
+              ? "bg-primary text-primary-foreground shadow"
+              : "text-slate-400 hover:text-slate-200"
+          )}
+        >
+          <FaUser className="w-3 h-3" />
+          <span>{locale === "ar" ? "الصفحة الكاملة" : "Full Page"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPreviewMode("qr")}
+          className={cn(
+            "flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5",
+            previewMode === "qr"
+              ? "bg-primary text-primary-foreground shadow"
+              : "text-slate-400 hover:text-slate-200"
+          )}
+        >
+          <FaQrcode className="w-3 h-3" />
+          <span>{locale === "ar" ? "رمز الـ QR" : "QR Code"}</span>
+        </button>
+      </div>
+
       {/* Outer Wrapper for Image Export (captures shadows and buttons without clipping) */}
       <div ref={mockupRef} className={cn("bg-transparent flex items-center justify-center select-none", isExporting ? "p-1.5" : "p-8")}>
         {/* iPhone Outer Titanium Band/Bezel */}
@@ -243,18 +272,6 @@ function MobilePreview({
                   : undefined
               }
             >
-              
-              {/* Language Switcher Simulation */}
-              <div className="w-full flex justify-end mb-3 shrink-0">
-                <div 
-                  style={{ animationDelay: "50ms" }}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[9px] font-bold animate-premium-enter ${theme.textColor} ${theme.langBtnBg} ${theme.langBtnBorder}`}
-                >
-                  <FaGlobe className={`w-2.5 h-2.5 ${theme.primaryColor}`} />
-                  <span>{otherLocaleName}</span>
-                </div>
-              </div>
-
               {/* Body content */}
               <div className="w-full flex flex-col items-center gap-3.5 flex-1">
                 {/* Logo */}
@@ -264,7 +281,11 @@ function MobilePreview({
                     alt="Logo"
                     crossOrigin="anonymous"
                     style={{ animationDelay: "150ms" }}
-                    className={`w-14 h-14 rounded-full object-cover border shadow-md animate-premium-enter ${theme.logoBorder}`}
+                    className={cn(
+                      "rounded-full object-cover border shadow-md animate-premium-enter transition-all duration-300",
+                      theme.logoBorder,
+                      previewMode === "qr" ? "w-20 h-20" : "w-16 h-16"
+                    )}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
@@ -272,9 +293,13 @@ function MobilePreview({
                 ) : (
                   <div 
                     style={{ animationDelay: "150ms" }}
-                    className={`w-14 h-14 rounded-full bg-slate-800 border flex items-center justify-center shadow-md animate-premium-enter ${theme.logoBorder}`}
+                    className={cn(
+                      "rounded-full bg-slate-800 border flex items-center justify-center shadow-md animate-premium-enter transition-all duration-300",
+                      theme.logoBorder,
+                      previewMode === "qr" ? "w-20 h-20" : "w-16 h-16"
+                    )}
                   >
-                    <FaBriefcase className="w-6 h-6 text-slate-500" />
+                    <FaBriefcase className={cn("text-slate-500 transition-all duration-300", previewMode === "qr" ? "w-8 h-8" : "w-6 h-6")} />
                   </div>
                 )}
 
@@ -283,10 +308,14 @@ function MobilePreview({
                   style={{ animationDelay: "250ms" }}
                   className="text-center flex flex-col gap-0.5 w-full px-1 animate-premium-enter"
                 >
-                  <h1 className={`text-xs font-extrabold truncate bg-clip-text text-transparent bg-gradient-to-r ${theme.companyNameColor}`}>
+                  <h1 className={cn(
+                    "font-extrabold truncate bg-clip-text text-transparent bg-gradient-to-r transition-all duration-300",
+                    theme.companyNameColor,
+                    previewMode === "qr" ? "text-base" : "text-sm"
+                  )}>
                     {displayName}
                   </h1>
-                  {displayAddress && profile.location && (
+                  {previewMode === "standard" && displayAddress && profile.location && (
                     <p className={`text-[9px] flex items-center justify-center gap-1 truncate ${theme.subTextColor}`}>
                       <FaMapMarkerAlt className={`w-2 h-2 shrink-0 ${theme.primaryColor}`} />
                       <span className="truncate">{displayAddress}</span>
@@ -294,103 +323,148 @@ function MobilePreview({
                   )}
                 </div>
 
-                {/* Links list */}
-                <div className="w-full flex flex-col gap-1.5 mt-1">
-                  {links && links.length > 0 ? (
-                    links.map((link, idx) => {
-                      if (!link.is_active) return null;
-                      const platform = getPlatformConfig(link.platform_name);
-                      const platformDisplayName = platform
-                        ? locale === "ar"
-                          ? platform.ar
-                          : platform.en
-                        : link.platform_name;
-                      const iconName = platform ? platform.iconName : "FaGlobe";
+                {previewMode === "standard" ? (
+                  <>
+                    {/* Links list */}
+                    <div className="w-full flex flex-col gap-1.5 mt-1">
+                      {links && links.length > 0 ? (
+                        links.map((link, idx) => {
+                          if (!link.is_active) return null;
+                          const platform = getPlatformConfig(link.platform_name);
+                          const platformDisplayName = platform
+                            ? locale === "ar"
+                              ? platform.ar
+                              : platform.en
+                            : link.platform_name;
+                          const iconName = platform ? platform.iconName : "FaGlobe";
+
+                          return (
+                            <div
+                              key={link.id}
+                              style={{ animationDelay: `${350 + idx * 80}ms` }}
+                              className={`w-full py-1.5 px-2.5 border rounded-xl font-bold flex justify-between items-center text-[10px] animate-premium-enter ${theme.linkBg} ${theme.linkBorder} ${theme.linkHoverBorder}`}
+                            >
+                              <div className="flex items-center gap-1.5 truncate">
+                                <PlatformIcon
+                                  name={iconName}
+                                  className={`w-3 h-3 ${theme.primaryColor}`}
+                                />
+                                <span className={`truncate ${theme.linkText}`}>
+                                  {platformDisplayName}
+                                </span>
+                              </div>
+                              <FaChevronRight className={`w-2 h-2 ${theme.primaryColor}`} />
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className={`text-center text-[9px] py-3 ${theme.subTextColor}`}>
+                          {dict.common.noLinks}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Payments Widgets */}
+                    {(() => {
+                      const instapayLinks = profile.instapay_link
+                        ? profile.instapay_link.split(",").map((l) => l.trim()).filter(Boolean)
+                        : [];
+                      const walletNumbers = profile.wallet_number
+                        ? profile.wallet_number.split(",").map((w) => w.trim()).filter(Boolean)
+                        : [];
+
+                      if (instapayLinks.length === 0 && walletNumbers.length === 0) return null;
 
                       return (
-                        <div
-                          key={link.id}
-                          style={{ animationDelay: `${350 + idx * 80}ms` }}
-                          className={`w-full py-1.5 px-2.5 border rounded-xl font-bold flex justify-between items-center text-[10px] animate-premium-enter ${theme.linkBg} ${theme.linkBorder} ${theme.linkHoverBorder}`}
+                        <div 
+                          style={{ animationDelay: `${350 + (links ? links.filter(l => l.is_active).length : 0) * 80 + 100}ms` }}
+                          className={`w-full p-2.5 rounded-xl border flex flex-col gap-1.5 mt-2 text-left rtl:text-right animate-premium-enter ${theme.payCardBg} ${theme.payCardBorder}`}
                         >
-                          <div className="flex items-center gap-1.5 truncate">
-                            <PlatformIcon
-                              name={iconName}
-                              className={`w-3 h-3 ${theme.primaryColor}`}
-                            />
-                            <span className={`truncate ${theme.linkText}`}>
-                              {platformDisplayName}
-                            </span>
+                          <span className={`font-extrabold text-[8px] border-b border-current/10 pb-0.5 uppercase ${theme.cardTitleColor}`}>
+                            💳 {locale === "ar" ? "وسائل الدفع" : "Payment Options"}
+                          </span>
+
+                          <div className="flex flex-col gap-1">
+                            {instapayLinks.map((link, idx) => (
+                              <div key={`insta-${idx}`} className={`flex items-center gap-1.5 p-1 rounded text-[9px] ${theme.payInstaBg}`}>
+                                <div className={`p-0.5 rounded shrink-0 ${theme.payInstaIconBg} ${theme.payInstaIconText}`}>
+                                  <FaCreditCard className="w-2.5 h-2.5" />
+                                </div>
+                                <div className="flex flex-col truncate text-left rtl:text-right">
+                                  <span className={`font-bold ${theme.textColor}`}>
+                                    {locale === "ar" ? "إنستا باي" : "Instapay"} {instapayLinks.length > 1 ? `#${idx + 1}` : ""}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+
+                            {walletNumbers.map((wallet, idx) => (
+                              <div key={`wallet-${idx}`} className={`flex items-center gap-1.5 p-1 rounded border text-[9px] ${theme.payWalletBg} ${theme.payWalletBorder}`}>
+                                <div className={`p-0.5 rounded shrink-0 ${theme.payWalletIconBg} ${theme.payWalletIconText}`}>
+                                  <FaMobileAlt className="w-2.5 h-2.5" />
+                                </div>
+                                <div className="flex flex-col truncate text-left rtl:text-right">
+                                  <span className={`font-bold ${theme.textColor}`}>
+                                    {dict.common.wallet} {walletNumbers.length > 1 ? `#${idx + 1}` : ""}
+                                  </span>
+                                  <span className={`text-[8px] font-mono truncate ${theme.subTextColor}`}>
+                                    {wallet}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <FaChevronRight className={`w-2 h-2 ${theme.primaryColor}`} />
                         </div>
                       );
-                    })
-                  ) : (
-                    <p className={`text-center text-[9px] py-3 ${theme.subTextColor}`}>
-                      {dict.common.noLinks}
-                    </p>
-                  )}
-                </div>
+                    })()}
+                  </>
+                ) : (
+                  /* QR Code instead of links/payments */
+                  <div 
+                    style={{ animationDelay: "350ms" }}
+                    className="flex-1 flex flex-col items-center justify-center w-full animate-premium-enter my-auto gap-4"
+                  >
+                    {/* Scan Instruction Title */}
+                    <span className={`text-[10px] font-bold tracking-wider uppercase opacity-85 ${theme.textColor}`}>
+                      {locale === "ar" ? "امسح رمز الـ QR للتواصل" : "Scan QR Code to Connect"}
+                    </span>
 
-                {/* Payments Widgets */}
-                {(() => {
-                  const instapayLinks = profile.instapay_link
-                    ? profile.instapay_link.split(",").map((l) => l.trim()).filter(Boolean)
-                    : [];
-                  const walletNumbers = profile.wallet_number
-                    ? profile.wallet_number.split(",").map((w) => w.trim()).filter(Boolean)
-                    : [];
-
-                  if (instapayLinks.length === 0 && walletNumbers.length === 0) return null;
-
-                  return (
-                    <div 
-                      style={{ animationDelay: `${350 + (links ? links.filter(l => l.is_active).length : 0) * 80 + 100}ms` }}
-                      className={`w-full p-2.5 rounded-xl border flex flex-col gap-1.5 mt-2 text-left rtl:text-right animate-premium-enter ${theme.payCardBg} ${theme.payCardBorder}`}
-                    >
-                      <span className={`font-extrabold text-[8px] border-b border-current/10 pb-0.5 uppercase ${theme.cardTitleColor}`}>
-                        💳 {locale === "ar" ? "وسائل الدفع" : "Payment Options"}
-                      </span>
-
-                      <div className="flex flex-col gap-1">
-                        {instapayLinks.map((link, idx) => (
-                          <div key={`insta-${idx}`} className={`flex items-center gap-1.5 p-1 rounded text-[9px] ${theme.payInstaBg}`}>
-                            <div className={`p-0.5 rounded shrink-0 ${theme.payInstaIconBg} ${theme.payInstaIconText}`}>
-                              <FaCreditCard className="w-2.5 h-2.5" />
-                            </div>
-                            <div className="flex flex-col truncate text-left rtl:text-right">
-                              <span className={`font-bold ${theme.textColor}`}>
-                                {locale === "ar" ? "إنستا باي" : "Instapay"} {instapayLinks.length > 1 ? `#${idx + 1}` : ""}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-
-                        {walletNumbers.map((wallet, idx) => (
-                          <div key={`wallet-${idx}`} className={`flex items-center gap-1.5 p-1 rounded border text-[9px] ${theme.payWalletBg} ${theme.payWalletBorder}`}>
-                            <div className={`p-0.5 rounded shrink-0 ${theme.payWalletIconBg} ${theme.payWalletIconText}`}>
-                              <FaMobileAlt className="w-2.5 h-2.5" />
-                            </div>
-                            <div className="flex flex-col truncate text-left rtl:text-right">
-                              <span className={`font-bold ${theme.textColor}`}>
-                                {dict.common.wallet} {walletNumbers.length > 1 ? `#${idx + 1}` : ""}
-                              </span>
-                              <span className={`text-[8px] font-mono truncate ${theme.subTextColor}`}>
-                                {wallet}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    {/* QR Card */}
+                    <div className="bg-white p-3 rounded-[2rem] border border-slate-200 shadow-xl flex items-center justify-center shrink-0 transition-transform duration-300 hover:scale-[1.02]">
+                      <QRCodeSVG
+                        id={`preview-qr-${profile.slug}`}
+                        value={
+                          typeof window !== "undefined"
+                            ? `${window.location.origin}/${locale}/${profile.slug || ""}`
+                            : `/${locale}/${profile.slug || ""}`
+                        }
+                        size={165}
+                        level="H"
+                        includeMargin={true}
+                        imageSettings={profile.logo_url ? {
+                          src: getBustUrl(profile.logo_url, profile.updated_at),
+                          x: undefined,
+                          y: undefined,
+                          height: 32,
+                          width: 32,
+                          excavate: true,
+                        } : undefined}
+                      />
                     </div>
-                  );
-                })()}
+
+                    {/* Subtle Subtext Instruction */}
+                    <p className={`text-[8.5px] text-center max-w-[190px] leading-relaxed opacity-70 px-2 ${theme.subTextColor}`}>
+                      {locale === "ar" 
+                        ? "وجه كاميرا الهاتف نحو الرمز لفتح الصفحة الشخصية مباشرة" 
+                        : "Point your phone camera at the code to open the profile page instantly"}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Footer */}
               <footer 
-                style={{ animationDelay: `${350 + (links ? links.filter(l => l.is_active).length : 0) * 80 + 180}ms` }}
+                style={{ animationDelay: `${350 + (previewMode === "standard" && links ? links.filter(l => l.is_active).length : 0) * 80 + (previewMode === "standard" ? 180 : 50)}ms` }}
                 className={`w-full text-center text-[8px] mt-2 shrink-0 animate-premium-enter ${theme.subTextColor}`}
               >
                 <p>

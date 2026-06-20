@@ -442,7 +442,7 @@ function MobilePreview({
                         level="H"
                         includeMargin={true}
                         imageSettings={profile.logo_url ? {
-                          src: getBustUrl(profile.logo_url, profile.updated_at),
+                          src: getBustUrl(profile.logo_url, profile.updated_at) || "",
                           x: undefined,
                           y: undefined,
                           height: 32,
